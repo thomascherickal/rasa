@@ -20,6 +20,7 @@ from rasa.shared.constants import (
 from rasa.core.test import FAILED_STORIES_FILE
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
+import rasa.utils.common
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ def run_core_test(args: argparse.Namespace) -> None:
     )
 
 
-def run_nlu_test(args: argparse.Namespace) -> None:
+async def run_nlu_test_async(args: argparse.Namespace) -> None:
     """Run NLU tests."""
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
@@ -149,7 +150,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
                 )
                 continue
 
-        compare_nlu_models(
+        await compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
             output=output,
@@ -167,7 +168,16 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.model, "model", DEFAULT_MODELS_PATH
         )
 
-        test_nlu(model_path, nlu_data, output, vars(args))
+        await test_nlu(model_path, nlu_data, output, vars(args))
+
+
+def run_nlu_test(args: argparse.Namespace) -> None:
+    """Adding this function layer to be able to run run_nlu_test_async in the event loop.
+
+    I have run_nlu_test_async to be able to have await calls inside because functions
+    test_nlu and compare_nlu_models are async.
+    """
+    rasa.utils.common.run_in_loop(run_nlu_test_async(args))
 
 
 def test(args: argparse.Namespace):
