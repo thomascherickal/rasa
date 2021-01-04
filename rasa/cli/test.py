@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from typing import List
+from typing import List, Optional, Text, Dict, Union
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -116,29 +116,51 @@ def run_core_test(args: argparse.Namespace) -> None:
     )
 
 
-async def run_nlu_test_async(args: argparse.Namespace) -> None:
-    """Run NLU tests."""
+async def run_nlu_test_async(
+    all_args: Optional[Dict] = None,
+    config: Optional[Union[Text, Dict]] = None,
+    data_path: Optional[Text] = "data",
+    models_path: Optional[Text] = "models",
+    output_dir: Optional[Text] = "results",
+    cross_validation: Optional[bool] = False,
+    percentages: Optional[List[int]] = [0, 25, 50, 75],
+    runs: Optional[int] = 3,
+    no_errors: Optional[bool] = False,
+) -> None:
+    """Runs NLU tests.
+
+    Args:
+        all_args: all arguments gathered in a Dict so we can pass them to 'perform_nlu_cross_validation' and
+                  'test_nlu' as parameter.
+        config: config file or a list of multiple config files.
+        data_path: path for the nlu data.
+        models_path: the path for the nlu data.
+        output_dir: the directory for the results to be saved.
+        cross_validation: boolean value that indicates if it should test the model using cross validation or not.
+        percentages: defines the exclusion percentage of the training data.
+        runs: used in 'compare_nlu_models' and indicates the number of comparison runs.
+        no_errors: boolean value that indicates if incorrect predictions should be written to a file or not.
+    """
     from rasa.test import compare_nlu_models, perform_nlu_cross_validation, test_nlu
 
-    nlu_data = rasa.cli.utils.get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    nlu_data = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     nlu_data = rasa.shared.data.get_nlu_directory(nlu_data)
-    output = args.out or DEFAULT_RESULTS_PATH
-    args.errors = not args.no_errors
-
+    output = output_dir or DEFAULT_RESULTS_PATH
+    all_args["errors"] = not no_errors
     rasa.shared.utils.io.create_directory(output)
 
-    if args.config is not None and len(args.config) == 1:
-        args.config = os.path.abspath(args.config[0])
-        if os.path.isdir(args.config):
-            args.config = rasa.shared.utils.io.list_files(args.config)
+    if config is not None and len(config) == 1:
+        config = os.path.abspath(config[0])
+        if os.path.isdir(config):
+            config = rasa.shared.utils.io.list_files(config)
 
-    if isinstance(args.config, list):
+    if isinstance(config, list):
         logger.info(
             "Multiple configuration files specified, running nlu comparison mode."
         )
 
         config_files = []
-        for file in args.config:
+        for file in config:
             try:
                 validation_utils.validate_yaml_schema(
                     rasa.shared.utils.io.read_file(file), CONFIG_SCHEMA_FILE,
@@ -149,35 +171,46 @@ async def run_nlu_test_async(args: argparse.Namespace) -> None:
                     f"Ignoring file '{file}' as it is not a valid config file."
                 )
                 continue
-
         await compare_nlu_models(
             configs=config_files,
             nlu=nlu_data,
             output=output,
-            runs=args.runs,
-            exclusion_percentages=args.percentages,
+            runs=runs,
+            exclusion_percentages=percentages,
         )
-    elif args.cross_validation:
+    elif cross_validation:
         logger.info("Test model using cross validation.")
         config = rasa.cli.utils.get_validated_path(
-            args.config, "config", DEFAULT_CONFIG_PATH
+            config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, vars(args))
+        perform_nlu_cross_validation(config, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
-            args.model, "model", DEFAULT_MODELS_PATH
+            models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, nlu_data, output, vars(args))
+        await test_nlu(model_path, nlu_data, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:
     """Adding this function layer to be able to run run_nlu_test_async in the event loop.
 
-    I have run_nlu_test_async to be able to have await calls inside because functions
-    test_nlu and compare_nlu_models are async.
+    I have run_nlu_test_async to be able to have await calls inside. That way I can call functions
+    test_nlu and compare_nlu_models with await statements since they are async functions.
     """
-    rasa.utils.common.run_in_loop(run_nlu_test_async(args))
+    rasa.utils.common.run_in_loop(
+        run_nlu_test_async(
+            vars(args),
+            args.config,
+            args.nlu,
+            args.model,
+            args.out,
+            args.cross_validation,
+            args.percentages,
+            args.runs,
+            args.no_errors,
+        )
+    )
 
 
 def test(args: argparse.Namespace):
