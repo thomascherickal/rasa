@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from typing import List, Optional, Text, Dict, Union
+from typing import List, Optional, Text, Dict, Union, Any
 
 from rasa.cli import SubParsersAction
 import rasa.shared.data
@@ -117,15 +117,15 @@ def run_core_test(args: argparse.Namespace) -> None:
 
 
 async def run_nlu_test_async(
-    all_args: Optional[Dict] = None,
     config: Optional[Union[Text, Dict]] = None,
-    data_path: Optional[Text] = "data",
-    models_path: Optional[Text] = "models",
-    output_dir: Optional[Text] = "results",
-    cross_validation: Optional[bool] = False,
-    percentages: Optional[List[int]] = [0, 25, 50, 75],
-    runs: Optional[int] = 3,
-    no_errors: Optional[bool] = False,
+    data_path: Optional[Text] = None,
+    models_path: Optional[Text] = None,
+    output_dir: Optional[Text] = None,
+    cross_validation: Optional[bool] = None,
+    percentages: Optional[List[int]] = None,
+    runs: Optional[int] = None,
+    no_errors: Optional[bool] = None,
+    all_args: Optional[Dict[Text, Any]] = None,
 ) -> None:
     """Runs NLU tests.
 
@@ -200,7 +200,6 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     """
     rasa.utils.common.run_in_loop(
         run_nlu_test_async(
-            vars(args),
             args.config,
             args.nlu,
             args.model,
@@ -209,6 +208,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
             args.percentages,
             args.runs,
             args.no_errors,
+            vars(args),
         )
     )
 

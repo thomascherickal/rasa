@@ -166,7 +166,7 @@ def train_core(
         )
 
 
-async def train_nlu(
+def train_nlu(
     args: argparse.Namespace, train_path: Optional[Text] = None
 ) -> Optional[Text]:
     """Trains an NLU model.
@@ -192,7 +192,7 @@ async def train_nlu(
             args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
         )
 
-    return await train_nlu(
+    return train_nlu(
         config=config,
         nlu_data=nlu_data,
         output=output,

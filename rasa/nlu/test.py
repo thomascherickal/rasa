@@ -1897,7 +1897,7 @@ async def compare_nlu(
                 )
 
                 try:
-                    model_path = await train_nlu(
+                    model_path = train_nlu(
                         nlu_config,
                         train_split_path,
                         model_output_path,
