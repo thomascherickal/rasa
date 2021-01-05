@@ -1852,7 +1852,7 @@ async def compare_nlu(
     Returns: training examples per run
     """
 
-    from rasa.train import train_nlu
+    from rasa.train import train_nlu_async
 
     training_examples_per_run = []
 
@@ -1897,7 +1897,7 @@ async def compare_nlu(
                 )
 
                 try:
-                    model_path = train_nlu(
+                    model_path = await train_nlu_async(
                         nlu_config,
                         train_split_path,
                         model_output_path,

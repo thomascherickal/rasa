@@ -117,15 +117,15 @@ def run_core_test(args: argparse.Namespace) -> None:
 
 
 async def run_nlu_test_async(
-    config: Optional[Union[Text, Dict]] = None,
-    data_path: Optional[Text] = None,
-    models_path: Optional[Text] = None,
-    output_dir: Optional[Text] = None,
-    cross_validation: Optional[bool] = None,
-    percentages: Optional[List[int]] = None,
-    runs: Optional[int] = None,
-    no_errors: Optional[bool] = None,
-    all_args: Optional[Dict[Text, Any]] = None,
+    config: Optional[Union[Text, Dict]],
+    data_path: Optional[Text],
+    models_path: Optional[Text],
+    output_dir: Optional[Text],
+    cross_validation: Optional[bool],
+    percentages: Optional[List[int]],
+    runs: Optional[int],
+    no_errors: Optional[bool],
+    all_args: Optional[Dict[Text, Any]],
 ) -> None:
     """Runs NLU tests.
 
